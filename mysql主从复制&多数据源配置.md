@@ -372,7 +372,11 @@ set password = password('root');
 # 3. 设置root用户的访问权限
 grant all privileges on *.* to 'root'@'%';
 flush privileges;
-# 4. 配置主库信息 （关键）
+# 4. 新增只有查询权限的用户
+create user 'viewer'@'localhost' identified by '123456';
+grant select on *.* to 'viewer'@'%';
+flush privileges;
+# 5. 配置主库信息 （关键）
 change master to master_host="192.168.26.128",
 			    master_user="slave",
 			    master_password="123456",
@@ -380,7 +384,7 @@ change master to master_host="192.168.26.128",
 			    master_log_file="mysql-bin.000001",
 			    master_log_pos=617,
 			    master_connect_retry=30;
-# 5. 修改my.cnf文件内容（主从服务相关信息）
+# 6. 修改my.cnf文件内容（主从服务相关信息）
 	#服务id
 	server-id=129
 	############################主从复制设置#####################################
@@ -411,7 +415,7 @@ change master to master_host="192.168.26.128",
 
     #relay_log配置中继日志
     relay_log=edu-mysql-relay-bin
- # 6.退出客户端并重启mysql服务
+ # 7.退出客户端并重启mysql服务
  service mysql restart
 ```
 

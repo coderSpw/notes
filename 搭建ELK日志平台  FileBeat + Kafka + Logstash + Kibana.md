@@ -45,7 +45,15 @@ output.kafka:
 
 ```
 
-#### 1.3  启动Filebeat
+#### 1.3 开启使用模块
+
+```sh
+./filebeat modules enable system nginx mysql kafka
+```
+
+
+
+#### 1.4  启动Filebeat
 
 ``` sh
 ./filebeat -c -e filebeat.yml
@@ -113,11 +121,48 @@ ls /brokers/topics
  ./kafka-console-consumer.sh --bootstrap-server 172.17.25.157:9092 --topic cnsaep-server-log --from-beginning
 ```
 
-#### 3.4 出现问题
+#### 
+
+### 4. docker环境安装logstash
+
+#### 4.1 安装logstash
+
+```sh
+#拉取镜像
+docker pull logstash:7.13.3
+```
+
+#### 4.2 启动logstash  端口号 5044
+
+```sh
+
+```
+
+#### 4.3 修改配置文件
+
+```yml
+
+```
+
+#### 4.4 重新启动logstash
+
+
+
+### 6.  出现问题及解决方案
+
+#### 1. 内存不足
 
 > Error occurred during initialization of VM Initial heap size set to a larger value than the maximum heap size
 
-原因： 内存不足，修改 kafka-server-start.sh  heap内存大小
+1. 原因： 内存不足，修改 kafka-server-start.sh  heap内存大小
+
+2. 解决方案： 找到指定的jvm.options 修改
+
+   ```sh
+   find / -name jvm.options
+   ```
+
+
 
 
 
