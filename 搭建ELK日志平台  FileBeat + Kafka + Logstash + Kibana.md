@@ -2,6 +2,12 @@
 
 
 
+> 下载elk文件官网：
+>
+> https://www.elastic.co/cn/downloads/past-releases#elasticsearch
+
+
+
 ### 1. linux环境下安装fileBeat
 
 #### 1.1. 安装Filebeat
@@ -17,46 +23,29 @@ tar -zxvf filebeat-7.3.0-linux-x86_64.tar.gz
 
 ```yml
 #=========================== Filebeat inputs =============================
-
 filebeat.inputs:
-
-# Each - is an input. Most options can be set at the input level, so
-# you can use different inputs for various configurations.
-# Below are the input specific configurations.
-
 - type: log
-
-  # Change to true to enable this input configuration.
-  enabled: true
-
-  # Paths that should be crawled and fetched. Glob based paths.
   paths:
-    - /usr/local/cnsaep/log/*.log
-    
+    - /usr/local/cnsaep/log/cnsaep.log
+  json.keys_under_root: true
+  json.add_error_key: true
+  json.message_key: log
+  
 #================================ Outputs =====================================
+# ---------------------------- console  Output ----------------------------
+#output.console:
+  #pretty: true
 
-# Configure what output to use when sending the data collected by the beat.
-
-#-------------------------- kafka output ------------------------------
+# ---------------------------- kafka Output ----------------------------
 output.kafka:
-  hosts: ["172.17.25.157:9092"]
-  topic: cnsaep-server-log
-  required_acks: 1
-
+  hosts: ["47.98.184.103:9092"]
+  topic: "elk_log"
 ```
 
-#### 1.3 开启使用模块
-
-```sh
-./filebeat modules enable system nginx mysql kafka
-```
-
-
-
-#### 1.4  启动Filebeat
+#### 1.3  启动Filebeat
 
 ``` sh
-./filebeat -c -e filebeat.yml
+nohup ./filebeat -c -e filebeat.yml &
 ```
 
 
@@ -105,7 +94,7 @@ docker logs containId
 
 ```sh
 #后台启动启动kafka
-./kafka-server-start.sh -daemon ../config/server.properties
+nohup ./bin/kafka-server-start.sh ./config/server.properties &
 ```
 
 #### 3.3 验证安装是否成功
@@ -123,28 +112,61 @@ ls /brokers/topics
 
 #### 
 
-### 4. docker环境安装logstash
+### 4. linux环境安装logstash
 
-#### 4.1 安装logstash
+#### 4.1 官网下载
+
+#### 4.2 修改配置文件
+
+1. 新建 etc/conf.d目录
+
+2. input.conf
+
+   ```sh
+   input{
+     kafka {
+       type => "elk_kafka"
+       codec => "json"
+       topics => "elk_log"
+       decorate_events => true
+       bootstrap_servers => "47.98.184.103:9092"
+     }
+   }
+   ```
+
+3. output.conf
+
+   ```sh
+   output {
+     if[type] == "elk_kafka" {
+       stdout {
+         codec => "json"
+       }
+     }
+   }
+   ```
+
+#### 4.3 启动logstash
 
 ```sh
-#拉取镜像
-docker pull logstash:7.13.3
+nohup ./logstash -f ../etc/conf.d/ --config.reload.automatic &
 ```
 
-#### 4.2 启动logstash  端口号 5044
+#### 
 
-```sh
+### 5. Linux环境安装elasticsearch
+
+#### 5.1 官网下载
+
+#### 5.2 调整jvm.options大小 
+
+``` sh
 
 ```
 
-#### 4.3 修改配置文件
 
-```yml
 
-```
 
-#### 4.4 重新启动logstash
 
 
 
