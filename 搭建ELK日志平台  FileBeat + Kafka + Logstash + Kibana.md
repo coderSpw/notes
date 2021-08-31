@@ -131,6 +131,11 @@ ls /brokers/topics
        decorate_events => true
        bootstrap_servers => "47.98.184.103:9092"
      }
+     # 文件读取
+     #file {
+      #path => "/usr/local/cnsaep/log/cnsaep.log"
+      #start_position => beiginning
+     #}
    }
    ```
 
@@ -142,6 +147,10 @@ ls /brokers/topics
        stdout {
          codec => "json"
        }
+       elasticsearch {
+        host => "47.98.184.103:9200"
+        index => "logstash-cnsaep-%{+YYYY-MM-dd}"
+      }
      }
    }
    ```
@@ -154,41 +163,123 @@ nohup ./logstash -f ../etc/conf.d/ --config.reload.automatic &
 
 #### 
 
-### 5. Linux环境安装elasticsearch
+### 5. docker环境安装elasticsearch
 
-#### 5.1 官网下载
+#### 5.1 dockerHub拉取对应版本镜像
+
+```sh
+docker pull elasticsearch:7.13.3
+```
 
 #### 5.2 调整jvm.options大小 
 
 ``` sh
+-Xms1g
+-Xmx1g
+```
 
+#### 5.3 启动es容器
+
+```sh
+docker run -di --name elasticsearch -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node"  imgId
+```
+
+#### 5.4 安装head插件并启动
+
+```sh
+docker pull mobz/elasticsearch-head:5-alpine
+#启动
+docker run -di --name es-head -p 9100:9100 imgId
 ```
 
 
 
+### 6. docker环境安装kibana
+
+#### 6.1.拉取镜像
+
+```sh
+docker pull kibana:7.13.3
+```
+
+#### 6.2 修改kibana.yml配置文件
+
+```yml
+server.host: "0.0.0.0"
+elasticsearch.hosts: [ "http://47.98.184.103:9200" ]
+monitoring.ui.container.elasticsearch.enabled: true
+```
+
+#### 6.3 启动容器 默认端口5601
+
+```sh
+docker run -di --name kibana -p 5601:5601 imgId
+```
 
 
 
+#### 6.4 启动成功界面展示
 
-### 6.  出现问题及解决方案
+![image-20210715125232638](C:/Users/s5536/AppData/Roaming/Typora/typora-user-images/image-20210715125232638.png)
 
-#### 1. 内存不足
+
+
+### 7.  出现问题及解决方案
+
+#### 7.1. 内存不足
 
 > Error occurred during initialization of VM Initial heap size set to a larger value than the maximum heap size
+>
+> 1. 原因： 内存不足，修改 kafka-server-start.sh  heap内存大小
+>
+> 2. 解决方案： 找到指定的jvm.options 修改
 
-1. 原因： 内存不足，修改 kafka-server-start.sh  heap内存大小
+```sh
+find / -name jvm.options
+```
 
-2. 解决方案： 找到指定的jvm.options 修改
+
+
+#### 7.2 使用elasticsearch使用head插件跨域
+
+> 使用head插件连接es出现跨域    
+>
+> 在elasticsearch.yml 文件中新增跨域参数
+>
+> ==**http.cors.enabled: true**==
+> ==**http.cors.allow-origin: "*"**==
+
+
+
+#### 7.3 使用head插件操作es时出现406 Not Acceptable
+
+![image-20210715113635278](https://raw.githubusercontent.com/coderSpw/notes/master/note_img/image-20210715113635278.png)
+
+操作方法：
+
+1. 查找vendor.js   相对路径：/app/_site/vendor.js
 
    ```sh
-   find / -name jvm.options
+   find / -name vendor.js
    ```
 
+ 2. 修改文件内容
 
+    ```text
+    ①. 6886行   contentType: "application/x-www-form-urlencoded
+    
+    改成
+    
+    contentType: "application/json;charset=UTF-8"
+    
+    ②. 7574行 var inspectData = s.contentType === "application/x-www-form-urlencoded" &&
+    
+    改成
+    
+    var inspectData = s.contentType === "application/json;charset=UTF-8" &&
+    
+    # 若是docker重启
+    docker restart -t=60 containId
+    ```
 
-
-
-
-
-
-
+    
